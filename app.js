@@ -58,7 +58,20 @@ function checkPassword (inputPass) {
   return false;
 };
 
+
 //-----------------------------------------------------------//
+
+app.use(function(req, res, next){
+  res.locals.user = req.cookies.user_id;
+  next();
+});
+
+//-----------------------------------------------------------//
+
+
+app.get('/', (req, res) => {
+  res.render('urls_login');
+});
 
 app.get('/register', (req, res) => {
   res.render('urls_register');
@@ -119,6 +132,10 @@ app.get("/urls", (req, res) => {
 
 //submit new links
 app.get("/urls/new", (req, res) => {
+  if (!res.locals.user) {
+    res.redirect ('/')
+    return;
+  }
   res.render('urls_new', {user: req.cookies.user_id});
 });
 
