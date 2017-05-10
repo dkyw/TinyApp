@@ -30,9 +30,23 @@ app.post('/login', (req, res) => {
   res.redirect('/urls');
 })
 
+app.get('/register', (req, res) => {
+  res.render('urls_register', {user: req.cookies.username});
+});
 
+
+app.post('/register', (req, res) => {
+
+  //dummy code ----------------------------------------------
+  let password = req.body.password;
+  let email = req.body.email;
+  console.log('password', password, 'email', email);
+});
+
+
+
+//index page with all links
 app.get("/urls", (req, res) => {
-  // console.log(req.cookies.username);
   let templateVars = {
     urls: urlDatabase,
     user: req.cookies.username
@@ -54,29 +68,14 @@ app.post('/urls', (req, res) => {
   res.redirect('/urls');
 })
 
-//redirect after link submission
+//redirect short links to original url
 app.get("/u/:shortURL", (req, res) => {
   let longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
 
 
-//delete existing links
-app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect('/urls')
-});
-
-//updating existing links
-app.post('/urls/:id', (req, res) => {
-  let shortURL = req.params.id
-  let longURL = req.body.longURL;
-  urlDatabase[shortURL] = longURL;
-  res.redirect('/urls');
-
-});
-
-
+//endpoint to render update links page
 app.get("/urls/:id", (req, res) => {
   let templateVars = {
     shortURL: req.params.id,
@@ -86,7 +85,22 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//updating existing links
+app.post('/urls/:id', (req, res) => {
+  let shortURL = req.params.id
+  let longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL;
+  res.redirect('/urls');
+});
 
+//delete existing links
+app.post("/urls/:id/delete", (req, res) => {
+  delete urlDatabase[req.params.id];
+  res.redirect('/urls')
+});
+
+
+//clear cookie on logout
 app.post('/logout', (req, res) => {
   res.clearCookie('username',req.cookies.username);
   res.redirect('/urls');
