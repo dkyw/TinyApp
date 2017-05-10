@@ -49,13 +49,14 @@ const userDatabase = {
 
 //-----------------------------------------------------------//
 
-app.get("/", (req, res) => {
-  res.end("Hello!");
+app.get("/login", (req, res) => {
+  res.render("urls_login", {user: req.cookies_user_id});
 });
+
 
 app.post('/login', (req, res) => {
   //set cookie to username
-  res.cookie('username', req.body.username);
+  res.cookie('user_id', req.body.email);
   res.redirect('/urls');
 })
 
