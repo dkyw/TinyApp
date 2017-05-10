@@ -3,12 +3,12 @@
 <% if(!user) { %>
   <form action="/login" method="POST">
     <input type="text" name="username" placeholder="username">
-    <input type="submit" value="Submit">
+    <button>Login</button>
   </form>
 <% } else { %>
   <h3><%= user %></h3>
   <form action="/logout" method="POST">
-    <input type="submit" value="Logout">
+   <button>Logout</button>
   </form>
 <% } %>
 
