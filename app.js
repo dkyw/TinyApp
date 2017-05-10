@@ -60,7 +60,7 @@ app.post('/login', (req, res) => {
 })
 
 app.get('/register', (req, res) => {
-  res.render('urls_register', {user: req.cookies.username});
+  res.render('urls_register', {user: req.cookies.user_id});
 });
 
 
@@ -99,7 +99,7 @@ app.post('/register', (req, res) => {
 app.get("/urls", (req, res) => {
   let templateVars = {
     urls: urlDatabase,
-    user: req.cookies.username
+    user: req.cookies.user_id
   };
   res.render("urls_index", templateVars);
 });
@@ -107,7 +107,7 @@ app.get("/urls", (req, res) => {
 
 //submit new links
 app.get("/urls/new", (req, res) => {
-  res.render('urls_new', {user: req.cookies.username});
+  res.render('urls_new', {user: req.cookies.user_id});
 });
 
 //add submitted links to database
@@ -130,7 +130,7 @@ app.get("/urls/:id", (req, res) => {
   let templateVars = {
     shortURL: req.params.id,
     longURL: urlDatabase[req.params.id],
-    user: req.cookies.username
+    user: req.cookies.user_id
   };
   res.render("urls_show", templateVars);
 });
@@ -152,7 +152,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 //clear cookie on logout
 app.post('/logout', (req, res) => {
-  res.clearCookie('username',req.cookies.username);
+  res.clearCookie('user_id',req.cookies.user_id);
   res.redirect('/urls');
 })
 
