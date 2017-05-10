@@ -10,15 +10,44 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 app.use(cookieParser());
 
+
+
 //generate alphanumeric string
 function generateRandomString() {
   return Math.random().toString(36).substr(2,6);
 };
 
+//check if user email exists
+function checkEmail (inputEmail) {
+  for (let user in userDatabase) {
+    if (userDatabase[user].email === inputEmail)
+      return false;
+  }
+};
+
+
+//-----------------------------------------------------------//
+
 var urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
+const userDatabase = {
+  "b2xVn2": {
+    id: "b2xVn2",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+ "9sm5xK": {
+    id: "9sm5xK",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
+}
+
+
+//-----------------------------------------------------------//
 
 app.get("/", (req, res) => {
   res.end("Hello!");
@@ -36,11 +65,32 @@ app.get('/register', (req, res) => {
 
 
 app.post('/register', (req, res) => {
+  let userId = generateRandomString();
+  let userPassword = req.body.password;
+  let userEmail = req.body.email;
 
-  //dummy code ----------------------------------------------
-  let password = req.body.password;
-  let email = req.body.email;
-  console.log('password', password, 'email', email);
+  //if the e-mail or password are empty strings, send 404
+  if (!userEmail || !userPassword) {
+    res.status(404);
+    res.send('Email or password field cannot be empty')
+    return;
+  }
+  //If someone tries to register with an existing user's email, send 400 status
+  if (checkEmail(userEmail) === false) {
+    res.status(400);
+    res.send('Email already in use');
+    return
+  } else {
+    //append user to userDatabase
+    userDatabase[userId] = {
+      id: userId,
+      email: userEmail,
+      password: userPassword
+    }
+  //set cookie for new user
+  res.cookie('user_id', userId);
+  res.redirect('/urls');
+  }
 });
 
 
