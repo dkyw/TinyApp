@@ -11,21 +11,6 @@ app.set("view engine", "ejs");
 app.use(cookieParser());
 
 
-
-//generate alphanumeric string
-function generateRandomString() {
-  return Math.random().toString(36).substr(2,6);
-};
-
-//check if user email exists
-function checkEmail (inputEmail) {
-  for (let user in userDatabase) {
-    if (userDatabase[user].email === inputEmail)
-      return false;
-  }
-};
-
-
 //-----------------------------------------------------------//
 
 var urlDatabase = {
@@ -46,24 +31,38 @@ const userDatabase = {
   }
 }
 
+//-----------------------------------------------------------//
+
+//generate alphanumeric string
+function generateRandomString() {
+  return Math.random().toString(36).substr(2,6);
+};
+
+//check if user email exists
+function checkEmail (inputEmail) {
+  for (let user in userDatabase) {
+    if (userDatabase[user].email === inputEmail) {
+      return true
+    }
+  }
+  return false;
+};
+
+//check if passwords match
+function checkPassword (inputPass) {
+  for (let user in userDatabase) {
+    if (userDatabase[user].password === inputPass) {
+      return true;
+    }
+  }
+  return false;
+};
 
 //-----------------------------------------------------------//
 
-app.get("/login", (req, res) => {
-  res.render("urls_login", {user: req.cookies_user_id});
-});
-
-
-app.post('/login', (req, res) => {
-  //set cookie to username
-  res.cookie('user_id', req.body.email);
-  res.redirect('/urls');
-})
-
 app.get('/register', (req, res) => {
-  res.render('urls_register', {user: req.cookies.user_id});
+  res.render('urls_register');
 });
-
 
 app.post('/register', (req, res) => {
   let userId = generateRandomString();
@@ -74,13 +73,10 @@ app.post('/register', (req, res) => {
   if (!userEmail || !userPassword) {
     res.status(404);
     res.send('Email or password field cannot be empty')
-    return;
-  }
   //If someone tries to register with an existing user's email, send 400 status
-  if (checkEmail(userEmail) === false) {
+  } else if (checkEmail(userEmail) === true) {
     res.status(400);
     res.send('Email already in use');
-    return
   } else {
     //append user to userDatabase
     userDatabase[userId] = {
@@ -88,13 +84,28 @@ app.post('/register', (req, res) => {
       email: userEmail,
       password: userPassword
     }
-  //set cookie for new user
-  res.cookie('user_id', userId);
-  res.redirect('/urls');
+    //set cookie for new user
+    res.cookie('user_id', userEmail);
+    res.redirect('/urls');
   }
 });
 
+app.get("/login", (req, res) => {
+  res.render("urls_login");
+});
 
+app.post('/login', (req, res) => {
+  let userPassword = req.body.password;
+  let userEmail = req.body.email;
+
+  if (checkEmail(userEmail) && checkPassword(userPassword)) {
+    res.cookie('user_id', userEmail);
+    res.redirect('/urls');
+  } else {
+    res.status(403);
+    res.send('Credentials Incorrect')
+  }
+});
 
 //index page with all links
 app.get("/urls", (req, res) => {
@@ -124,7 +135,6 @@ app.get("/u/:shortURL", (req, res) => {
   let longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
-
 
 //endpoint to render update links page
 app.get("/urls/:id", (req, res) => {
@@ -156,7 +166,6 @@ app.post('/logout', (req, res) => {
   res.clearCookie('user_id',req.cookies.user_id);
   res.redirect('/urls');
 })
-
 
 
 //-------------------------------------------------------//
