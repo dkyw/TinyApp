@@ -10,7 +10,7 @@
      <% for (url in urls) { %>
 
       <form method="POST" action="/urls/<%= url %>/delete">
-      <li><%= url %> : <%= urls[url]%><button type="submit">Delete</li><button><a href ='/urls/<%= url %>'>Edit</a>
+      <li><%= url %> : <%= urls[url]%><button type="submit">Delete</button><a href ='/urls/<%= url %>'>Edit</a></li>
       </form>
 
     <% } %>
