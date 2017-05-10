@@ -32,9 +32,10 @@ app.post('/login', (req, res) => {
 
 
 app.get("/urls", (req, res) => {
-  console.log(req.cookies.username);
+  // console.log(req.cookies.username);
   let templateVars = {
     urls: urlDatabase,
+    user: req.cookies.username
   };
   res.render("urls_index", templateVars);
 });
@@ -42,7 +43,7 @@ app.get("/urls", (req, res) => {
 
 //submit new links
 app.get("/urls/new", (req, res) => {
-  res.render('urls_new');
+  res.render('urls_new', {user: req.cookies.username});
 });
 
 //add submitted links to database
@@ -80,12 +81,16 @@ app.get("/urls/:id", (req, res) => {
   let templateVars = {
     shortURL: req.params.id,
     longURL: urlDatabase[req.params.id],
+    user: req.cookies.username
   };
   res.render("urls_show", templateVars);
 });
 
 
-
+app.post('/logout', (req, res) => {
+  res.clearCookie('username',req.cookies.username);
+  res.redirect('/urls');
+})
 
 
 
