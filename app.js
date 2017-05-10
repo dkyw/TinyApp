@@ -1,13 +1,14 @@
 const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 8080; // default port 8080
-
+const cookieParser = require('cookie-parser');
 
 //allows access POST request parameters
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
+app.use(cookieParser());
 
 //generate alphanumeric string
 function generateRandomString() {
@@ -23,9 +24,18 @@ app.get("/", (req, res) => {
   res.end("Hello!");
 });
 
+app.post('/login', (req, res) => {
+  //set cookie to username
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
+})
+
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  console.log(req.cookies.username);
+  let templateVars = {
+    urls: urlDatabase,
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -41,7 +51,6 @@ app.post('/urls', (req, res) => {
   let longURL = req.body.longURL;
   urlDatabase[randomString] = longURL;
   res.redirect('/urls');
-  //res.redirect(`http://localhost:8080/urls/${randomString}`);
 })
 
 //redirect after link submission
@@ -62,9 +71,6 @@ app.post('/urls/:id', (req, res) => {
   let shortURL = req.params.id
   let longURL = req.body.longURL;
   urlDatabase[shortURL] = longURL;
-  // console.log(longURL);
-  // console.log(shortURL);
-
   res.redirect('/urls');
 
 });
