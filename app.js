@@ -23,36 +23,51 @@ app.get("/", (req, res) => {
   res.end("Hello!");
 });
 
+
 app.get("/urls", (req, res) => {
   let templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
 
+
+//submit new links
+app.get("/urls/new", (req, res) => {
+  res.render('urls_new');
+});
+
+//add submitted links to database
 app.post('/urls', (req, res) => {
   let randomString = generateRandomString();
   let longURL = req.body.longURL;
   urlDatabase[randomString] = longURL;
-  // console.log(urlDatabase);
-  res.redirect(`http://localhost:8080/urls/${randomString}`);
+  res.redirect('/urls');
+  //res.redirect(`http://localhost:8080/urls/${randomString}`);
 })
 
+//redirect after link submission
 app.get("/u/:shortURL", (req, res) => {
   let longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
 
-app.get("/urls/new", (req, res) => {
-  res.render('urls_new');
-});
 
+//delete existing links
 app.post("/urls/:id/delete", (req, res) => {
-  //delete urlDatabase[req.params.id];
-  // let shortURL = req.params.id
-  // console.log(urlDatabase[req.params.id]);
   delete urlDatabase[req.params.id];
   res.redirect('/urls')
 });
 
+//updating existing links
+app.post('/urls/:id', (req, res) => {
+  let shortURL = req.params.id
+  let longURL = req.body.longURL;
+  urlDatabase[shortURL] = longURL;
+  // console.log(longURL);
+  // console.log(shortURL);
+
+  res.redirect('/urls');
+
+});
 
 
 app.get("/urls/:id", (req, res) => {
@@ -64,6 +79,11 @@ app.get("/urls/:id", (req, res) => {
 });
 
 
+
+
+
+
+//-------------------------------------------------------//
 app.listen(PORT, () => {
   console.log(`TinyApp listening on port ${PORT}!`);
 });
