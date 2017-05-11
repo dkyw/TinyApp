@@ -8,11 +8,9 @@
  <% include ./partials/_header %>
     <ul>
      <% for (url in urls) { %>
-
-      <form method="POST" action="/urls/<%= url %>/delete">
-
+      <form method="POST" action="/urls/<%= urls[url].shortURL %>/delete">
       <li>
-        <a href="http://localhost:8080/u/<%= url %>"</a><%= url %> : <%= urls[url]%><button>Delete</button><a href ='/urls/<%= url %>'>Edit</a>
+        <a href="http://localhost:8080/u/<%= urls[url].shortURL %>"</a><%= urls[url].shortURL %> : <%= urls[url].longURL%><button>Delete</button><a href ='/urls/<%= url %>'>Edit</a>
       </li>
 
       </form>
@@ -25,3 +23,8 @@
 </html>
 
 
+
+<!--
+for(let url in urlDatabase) {
+  console.log(urlDatabase[url].shortURL);
+ -->
