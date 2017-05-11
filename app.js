@@ -1,7 +1,9 @@
 const express = require("express");
 const app = express();
-const PORT = process.env.PORT || 8080; // default port 8080
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcrypt');
+const PORT = process.env.PORT || 8080; // default port 8080
+
 
 //allows access POST request parameters
 const bodyParser = require("body-parser");
@@ -9,7 +11,6 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 app.use(cookieParser());
-
 
 //-----------------------------------------------------------//
 
@@ -58,15 +59,11 @@ function checkEmail (inputEmail) {
 };
 
 //check if passwords match
-function checkPassword (inputPass) {
-  for (let user in userDatabase) {
-    if (userDatabase[user].password === inputPass) {
-      return true;
-    }
-  }
-  return false;
+function checkPassword (user, inputPass) {
+  return bcrypt.compareSync (inputPass,userDatabase[user].password);
 };
 
+//return user if email matches, used to set cookie
 function checkUser(inputEmail) {
   for (let user in userDatabase) {
     if (inputEmail === userDatabase[user].email)
@@ -92,6 +89,7 @@ app.use(function(req, res, next){
   next();
 });
 
+
 //-----------------------------------------------------------//
 
 
@@ -103,9 +101,10 @@ app.get('/register', (req, res) => {
   res.render('urls_register');
 });
 
+
 app.post('/register', (req, res) => {
   let userId = generateRandomString();
-  let userPassword = req.body.password;
+  let userPassword = bcrypt.hashSync(req.body.password,10);
   let userEmail = req.body.email;
 
   //if the e-mail or password are empty strings, send 404
@@ -138,7 +137,8 @@ app.post('/login', (req, res) => {
   let userEmail = req.body.email;
   let userId = checkUser(userEmail);
 
-  if (checkEmail(userEmail) && checkPassword(userPassword)) {
+
+  if (checkEmail(userEmail) && checkPassword(userId, userPassword)) {
     res.cookie('user_id', userId);
     res.redirect('/urls');
   } else {
