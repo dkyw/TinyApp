@@ -1,51 +1,23 @@
 const express = require("express");
-const app = express();
-const cookieParser = require('cookie-parser');
-var cookieSession = require('cookie-session')
+const bodyParser = require("body-parser");
+const cookieSession = require('cookie-session')
 const bcrypt = require('bcrypt');
+const app = express();
 const PORT = process.env.PORT || 8080; // default port 8080
 
-
-//allows access POST request parameters
-const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
-
-app.set("view engine", "ejs");
-app.use(cookieParser());
 
 app.use(cookieSession({
   name: 'session',
   keys: ['yahooo'],
 }));
 
+app.set("view engine", "ejs");
+
 //-----------------------------------------------------------//
 
-const urlDatabase = {
-  'b2xVn2': {
-    userID: 'xuD83h',
-    shortURL: 'b2xVn2',
-    longURL: 'http://www.lighthouselabs.ca'
-  },
-  '9sm5xK': {
-    userID: '0Se7Gs',
-    shortURL: '9sm5xK',
-    longURL: 'http://www.google.com'
-  }
-};
-
-
-const userDatabase = {
-  "b2xVn2": {
-    id: "b2xVn2",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
-  },
- "9sm5xK": {
-    id: "9sm5xK",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
-  }
-};
+const userDatabase = {};
+const urlDatabase = {};
 
 //-----------------------------------------------------------//
 
@@ -58,7 +30,7 @@ function generateRandomString() {
 function checkEmail (inputEmail) {
   for (let user in userDatabase) {
     if (userDatabase[user].email === inputEmail) {
-      return true
+      return true;
     }
   }
   return false;
@@ -66,16 +38,16 @@ function checkEmail (inputEmail) {
 
 //check if passwords match
 function checkPassword (user, inputPass) {
-  return bcrypt.compareSync (inputPass,userDatabase[user].password);
+  return bcrypt.compareSync (inputPass, userDatabase[user].password);
 };
 
 //return user if email matches, used to set cookie
 function checkUser(inputEmail) {
   for (let user in userDatabase) {
-    if (inputEmail === userDatabase[user].email)
+    if (inputEmail === userDatabase[user].email);
       return user;
   }
-}
+};
 
 //return only the links created by the user
 function filteredURL(userId) {
@@ -86,17 +58,17 @@ function filteredURL(userId) {
       filtered[shorturl] = urlDatabase[url];
   }
   return filtered;
-}
-
+};
 
 //-----------------------------------------------------------//
-
 app.use(function(req, res, next){
-  //res.locals.user = req.cookies.user_id;
   res.locals.user = userDatabase[req.session.user_id];
   next();
 });
 
+app.listen(PORT, () => {
+  console.log(`TinyApp listening on port ${PORT}!`);
+});
 
 //-----------------------------------------------------------//
 
@@ -118,7 +90,7 @@ app.post('/register', (req, res) => {
   //if the e-mail or password are empty strings, send 404
   if (!userEmail || !userPassword) {
     res.status(404);
-    res.send('Email or password field cannot be empty')
+    res.send('Email or password field cannot be empty');
   //If someone tries to register with an existing user's email, send 400 status
   } else if (checkEmail(userEmail) === true) {
     res.status(400);
@@ -158,7 +130,7 @@ app.post('/login', (req, res) => {
 app.get("/urls", (req, res) => {
   if (!res.locals.user) {
     res.redirect('/');
-    return
+    return;
   }
   let filteredDb = filteredURL(res.locals.user.id);
 
@@ -173,7 +145,7 @@ app.get("/urls", (req, res) => {
 //submit new links
 app.get("/urls/new", (req, res) => {
   if (!res.locals.user) {
-    res.redirect ('/')
+    res.redirect ('/');
     return;
   }
   res.render('urls_new', {user: res.locals.user.email});
@@ -185,12 +157,12 @@ app.post('/urls', (req, res) => {
   let longURL = req.body.longURL;
 
   urlDatabase[randomString] = {
-    userID: req.session.user_id,
+    userID: res.locals.user.id,
     shortURL: randomString,
     longURL: longURL
   }
   res.redirect('/urls');
-})
+});
 
 
 //redirect short links to original url
@@ -202,10 +174,10 @@ app.get("/u/:shortURL", (req, res) => {
 //endpoint to render update links page
 app.get("/urls/:id", (req, res) => {
   if (!res.locals.user) {
-    res.redirect('/')
-    return
+    res.redirect('/');
+    return;
   }
-  if(urlDatabase[req.params.id].userID !== req.session.user_id) {
+  if(urlDatabase[req.params.id].userID !== res.locals.user.id) {
     //res.status(404);
     res.send('You do not own that url');
   } else {
@@ -232,7 +204,7 @@ app.post("/urls/:id/delete", (req, res) => {
     res.redirect('/')
     return
   }
-  if(urlDatabase[req.params.id].userID !== req.session.user_id) {
+  if(urlDatabase[req.params.id].userID !== res.locals.user.id) {
     //res.status(404);
     res.send('You do not own that url');
   } else {
@@ -247,11 +219,6 @@ app.post('/logout', (req, res) => {
   res.redirect('/urls');
 })
 
-
-//-------------------------------------------------------//
-app.listen(PORT, () => {
-  console.log(`TinyApp listening on port ${PORT}!`);
-});
 
 
 
