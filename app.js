@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cookieParser = require('cookie-parser');
+var cookieSession = require('cookie-session')
 const bcrypt = require('bcrypt');
 const PORT = process.env.PORT || 8080; // default port 8080
 
@@ -11,6 +12,11 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 app.use(cookieParser());
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['yahooo'],
+}));
 
 //-----------------------------------------------------------//
 
@@ -71,6 +77,7 @@ function checkUser(inputEmail) {
   }
 }
 
+//return only the links created by the user
 function filteredURL(userId) {
   let filtered = {};
   for (let url in urlDatabase) {
@@ -85,7 +92,8 @@ function filteredURL(userId) {
 //-----------------------------------------------------------//
 
 app.use(function(req, res, next){
-  res.locals.user = req.cookies.user_id;
+  //res.locals.user = req.cookies.user_id;
+  res.locals.user = userDatabase[req.session.user_id];
   next();
 });
 
@@ -123,7 +131,7 @@ app.post('/register', (req, res) => {
       password: userPassword
     }
     //set cookie for new user
-    res.cookie('user_id', userId);
+    req.session.user_id = userId;
     res.redirect('/urls');
   }
 });
@@ -137,9 +145,8 @@ app.post('/login', (req, res) => {
   let userEmail = req.body.email;
   let userId = checkUser(userEmail);
 
-
   if (checkEmail(userEmail) && checkPassword(userId, userPassword)) {
-    res.cookie('user_id', userId);
+    req.session.user_id = userId;
     res.redirect('/urls');
   } else {
     res.status(403);
@@ -150,14 +157,14 @@ app.post('/login', (req, res) => {
 //index page with all links
 app.get("/urls", (req, res) => {
   if (!res.locals.user) {
-    res.redirect('/')
+    res.redirect('/');
     return
   }
-  let filteredDb = filteredURL(res.locals.user)
+  let filteredDb = filteredURL(res.locals.user.id);
 
   let templateVars = {
     urls: filteredDb,
-    user: req.cookies.user_id
+    user: res.locals.user.email
   };
   res.render("urls_index", templateVars);
 });
@@ -169,7 +176,7 @@ app.get("/urls/new", (req, res) => {
     res.redirect ('/')
     return;
   }
-  res.render('urls_new', {user: req.cookies.user_id});
+  res.render('urls_new', {user: res.locals.user.email});
 });
 
 //add submitted links to database
@@ -178,7 +185,7 @@ app.post('/urls', (req, res) => {
   let longURL = req.body.longURL;
 
   urlDatabase[randomString] = {
-    userID: req.cookies.user_id,
+    userID: req.session.user_id,
     shortURL: randomString,
     longURL: longURL
   }
@@ -198,14 +205,14 @@ app.get("/urls/:id", (req, res) => {
     res.redirect('/')
     return
   }
-  if(urlDatabase[req.params.id].userID !== res.locals.user) {
+  if(urlDatabase[req.params.id].userID !== req.session.user_id) {
     //res.status(404);
     res.send('You do not own that url');
   } else {
     let templateVars = {
       shortURL: req.params.id,
       longURL: urlDatabase[req.params.id].longURL,
-      user: req.cookies.user_id
+      user: res.locals.user.email
     };
     res.render("urls_show", templateVars);
   }
@@ -225,7 +232,7 @@ app.post("/urls/:id/delete", (req, res) => {
     res.redirect('/')
     return
   }
-  if(urlDatabase[req.params.id].userID !== res.locals.user) {
+  if(urlDatabase[req.params.id].userID !== req.session.user_id) {
     //res.status(404);
     res.send('You do not own that url');
   } else {
@@ -236,7 +243,7 @@ app.post("/urls/:id/delete", (req, res) => {
 
 //clear cookie on logout
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id',req.cookies.user_id);
+  req.session = null;
   res.redirect('/urls');
 })
 
