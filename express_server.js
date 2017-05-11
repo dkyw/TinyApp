@@ -1,18 +1,18 @@
 const express = require("express");
+const app = express();
 const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session')
 const bcrypt = require('bcrypt');
-const app = express();
-const PORT = process.env.PORT || 8080; // default port 8080
 
 app.use(bodyParser.urlencoded({extended: true}));
-
 app.use(cookieSession({
   name: 'session',
   keys: ['yahooo'],
 }));
 
 app.set("view engine", "ejs");
+
+const PORT = process.env.PORT || 8080; // default port 8080
 
 //-----------------------------------------------------------//
 
@@ -24,6 +24,14 @@ const urlDatabase = {};
 //generate alphanumeric string
 function generateRandomString() {
   return Math.random().toString(36).substr(2,6);
+};
+
+//return user if email matches, used to set cookie
+function checkUser(inputEmail) {
+  for (let user in userDatabase) {
+    if (inputEmail === userDatabase[user].email);
+      return user;
+  }
 };
 
 //check if user email exists
@@ -41,6 +49,17 @@ function checkPassword (user, inputPass) {
   return bcrypt.compareSync (inputPass, userDatabase[user].password);
 };
 
+//add new user to database
+function createUser(email, password) {
+  let userId = generateRandomString();
+  userDatabase[userId] = {
+    id: userId,
+    email: email,
+    password: password
+  }
+  return userId;
+}
+
 function addSites(user, longURL) {
   let randomString = generateRandomString();
   urlDatabase[randomString] = {
@@ -49,23 +68,6 @@ function addSites(user, longURL) {
     longURL: longURL
   }
 }
-
-// function addUser(email, password) {
-//   let randomString = generateRandomString();
-//   userDatabase[randomString] = {
-//     id: randomString,
-//     email: email,
-//     password: password
-//   }
-// }
-
-//return user if email matches, used to set cookie
-function checkUser(inputEmail) {
-  for (let user in userDatabase) {
-    if (inputEmail === userDatabase[user].email);
-      return user;
-  }
-};
 
 //return only the links created by the user
 function filteredURL(userId) {
@@ -92,65 +94,60 @@ app.listen(PORT, () => {
 
 app.get('/', (req, res) => {
   if (!res.locals.user) {
-    res.redirect('/login')
-    return
+    res.status(301).redirect('/login');
+    return;
   }
-  res.redirect('/urls');
+  res.status(301).redirect('/urls');
 });
 
 app.get('/register', (req, res) => {
-  res.render('urls_register');
+  res.status(200).render('urls_register');
 });
 
 app.post('/register', (req, res) => {
-  let userId = generateRandomString();
   let userPassword = bcrypt.hashSync(req.body.password,10);
   let userEmail = req.body.email;
 
   //if the e-mail or password are empty strings, send 404
   if (!userEmail || !userPassword) {
-    res.status(404);
-    res.send('Email or password field cannot be empty');
+    res.status(404).send('Email or password field cannot be empty');
   //If someone tries to register with an existing user's email, send 400 status
   } else if (checkEmail(userEmail) === true) {
-    res.status(400);
-    res.send('Email already in use');
+    res.status(400).send('Email already in use');
   } else {
     //append user to userDatabase
-    userDatabase[userId] = {
-      id: userId,
-      email: userEmail,
-      password: userPassword
-    }
-    //set cookie for new user
+    let userId = createUser(userEmail, userPassword);
+    //set cookie to new user
     req.session.user_id = userId;
-    res.redirect('/urls');
+    res.status(301).redirect('/urls');
   }
 });
 
 app.get("/login", (req, res) => {
-  res.render("urls_login");
+  if (res.locals.user){
+    res.status(301).redirect('/urls');
+    return;
+  }
+  res.status(200).render("urls_login");
 });
 
 app.post('/login', (req, res) => {
   let userPassword = req.body.password;
   let userEmail = req.body.email;
   let userId = checkUser(userEmail);
-  // let userId = req.session.user_id;
 
   if (checkEmail(userEmail) && checkPassword(userId, userPassword)) {
     req.session.user_id = userId;
-    res.redirect('/urls');
+    res.status(301).redirect('/urls');
   } else {
-    res.status(403);
-    res.send('Incorrect Credentials')
+    res.status(400).send('Incorrect Credentials')
   }
 });
 
 //index page with all links
 app.get("/urls", (req, res) => {
   if (!res.locals.user) {
-    res.send('Please login to view or submit links');
+    res.status(401).send('Please login to view or submit links');
     return;
   }
   let filteredDb = filteredURL(res.locals.user.id);
@@ -159,79 +156,94 @@ app.get("/urls", (req, res) => {
     urls: filteredDb,
     user: res.locals.user.email
   };
-  res.render("urls_index", templateVars);
+  res.status(200).render("urls_index", templateVars);
 });
 
 //submit new links
 app.get("/urls/new", (req, res) => {
   if (!res.locals.user) {
-    res.redirect ('/login');
+    res.status(301).redirect ('/login');
     return;
   }
-  res.render('urls_new', {user: res.locals.user.email});
+  res.status(200).render('urls_new', {user: res.locals.user.email});
 });
 
 //add submitted links to database
 app.post('/urls', (req, res) => {
+  if(!res.locals.user) {
+    res.status(401).send('Please login to view or submit links');
+    return;
+  }
   let randomString = generateRandomString();
   let longURL = req.body.longURL;
 
   addSites(res.locals.user.id, longURL);
-  res.redirect('/urls');
+  res.status(301).redirect('/urls');
 });
 
 //redirect short links to original url
 app.get("/u/:shortURL", (req, res) => {
   let longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
+  res.status(301).redirect(longURL);
 });
 
 //endpoint to render update links page
 app.get("/urls/:id", (req, res) => {
   if (!res.locals.user) {
-    res.redirect('/');
+    res.status(401).send('Please login to view or submit links');
+    return;
+  }
+  if(!urlDatabase[req.params.id]) {
+    res.status(404).send('The link cannot be found')
     return;
   }
   if(urlDatabase[req.params.id].userID !== res.locals.user.id) {
-    //res.status(404);
-    res.send('You do not own that url');
-  } else {
-    let templateVars = {
-      shortURL: req.params.id,
-      longURL: urlDatabase[req.params.id].longURL,
-      user: res.locals.user.email
-    };
-    res.render("urls_show", templateVars);
+    res.status(401).send('You do not have access rights to the URL');
+    return;
   }
+  let templateVars = {
+    shortURL: req.params.id,
+    longURL: urlDatabase[req.params.id].longURL,
+    user: res.locals.user.email
+  };
+  res.render("urls_show", templateVars);
 });
 
 //updating existing links
 app.post('/urls/:id', (req, res) => {
+  if(!res.locals.user) {
+    res.status(301).send('Please login to view or submit links');
+    return;
+  }
+
+  if(urlDatabase[req.params.id].userID !== res.locals.user.id) {
+    res.status(401).send('You do not have access rights to the URL');
+    return;
+  }
   let shortURL = req.params.id
   let longURL = req.body.longURL;
   urlDatabase[shortURL].longURL = longURL;
-  res.redirect('/urls');
+  res.status(301).redirect('/urls');
 });
 
 //delete existing links
 app.post("/urls/:id/delete", (req, res) => {
   if (!res.locals.user) {
-    res.redirect('/')
+    res.status(301).redirect('/')
     return
   }
   if(urlDatabase[req.params.id].userID !== res.locals.user.id) {
-    //res.status(404);
-    res.send('You do not own that url');
+    res.status(401).send('You do not have access rights to the URL');
   } else {
     delete urlDatabase[req.params.id];
-    res.redirect('/urls');
+    res.status(301).redirect('/urls');
   }
 });
 
 //clear cookie on logout
 app.post('/logout', (req, res) => {
   req.session = null;
-  res.redirect('/');
+  res.status(301).redirect('/');
 })
 
 
