@@ -41,6 +41,24 @@ function checkPassword (user, inputPass) {
   return bcrypt.compareSync (inputPass, userDatabase[user].password);
 };
 
+function addSites(user, longURL) {
+  let randomString = generateRandomString();
+  urlDatabase[randomString] = {
+    userID: user,
+    shortURL: randomString,
+    longURL: longURL
+  }
+}
+
+// function addUser(email, password) {
+//   let randomString = generateRandomString();
+//   userDatabase[randomString] = {
+//     id: randomString,
+//     email: email,
+//     password: password
+//   }
+// }
+
 //return user if email matches, used to set cookie
 function checkUser(inputEmail) {
   for (let user in userDatabase) {
@@ -72,15 +90,17 @@ app.listen(PORT, () => {
 
 //-----------------------------------------------------------//
 
-
 app.get('/', (req, res) => {
-  res.render('urls_login');
+  if (!res.locals.user) {
+    res.redirect('/login')
+    return
+  }
+  res.redirect('/urls');
 });
 
 app.get('/register', (req, res) => {
   res.render('urls_register');
 });
-
 
 app.post('/register', (req, res) => {
   let userId = generateRandomString();
@@ -116,6 +136,7 @@ app.post('/login', (req, res) => {
   let userPassword = req.body.password;
   let userEmail = req.body.email;
   let userId = checkUser(userEmail);
+  // let userId = req.session.user_id;
 
   if (checkEmail(userEmail) && checkPassword(userId, userPassword)) {
     req.session.user_id = userId;
@@ -129,7 +150,7 @@ app.post('/login', (req, res) => {
 //index page with all links
 app.get("/urls", (req, res) => {
   if (!res.locals.user) {
-    res.redirect('/');
+    res.send('Please login to view or submit links');
     return;
   }
   let filteredDb = filteredURL(res.locals.user.id);
@@ -141,11 +162,10 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-
 //submit new links
 app.get("/urls/new", (req, res) => {
   if (!res.locals.user) {
-    res.redirect ('/');
+    res.redirect ('/login');
     return;
   }
   res.render('urls_new', {user: res.locals.user.email});
@@ -156,14 +176,9 @@ app.post('/urls', (req, res) => {
   let randomString = generateRandomString();
   let longURL = req.body.longURL;
 
-  urlDatabase[randomString] = {
-    userID: res.locals.user.id,
-    shortURL: randomString,
-    longURL: longURL
-  }
+  addSites(res.locals.user.id, longURL);
   res.redirect('/urls');
 });
-
 
 //redirect short links to original url
 app.get("/u/:shortURL", (req, res) => {
@@ -216,7 +231,7 @@ app.post("/urls/:id/delete", (req, res) => {
 //clear cookie on logout
 app.post('/logout', (req, res) => {
   req.session = null;
-  res.redirect('/urls');
+  res.redirect('/');
 })
 
 
