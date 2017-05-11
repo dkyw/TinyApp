@@ -74,7 +74,7 @@ function checkUser(inputEmail) {
   }
 }
 
-function urlsForUser(userId) {
+function filteredURL(userId) {
   let filtered = {};
   for (let url in urlDatabase) {
     let shorturl = urlDatabase[url].shortURL;
@@ -143,14 +143,20 @@ app.post('/login', (req, res) => {
     res.redirect('/urls');
   } else {
     res.status(403);
-    res.send('Credentials Incorrect')
+    res.send('Incorrect Credentials')
   }
 });
 
 //index page with all links
 app.get("/urls", (req, res) => {
+  if (!res.locals.user) {
+    res.redirect('/')
+    return
+  }
+  let filteredDb = filteredURL(res.locals.user)
+
   let templateVars = {
-    urls: urlDatabase,
+    urls: filteredDb,
     user: req.cookies.user_id
   };
   res.render("urls_index", templateVars);
@@ -170,6 +176,7 @@ app.get("/urls/new", (req, res) => {
 app.post('/urls', (req, res) => {
   let randomString = generateRandomString();
   let longURL = req.body.longURL;
+
   urlDatabase[randomString] = {
     userID: req.cookies.user_id,
     shortURL: randomString,
@@ -187,7 +194,6 @@ app.get("/u/:shortURL", (req, res) => {
 
 //endpoint to render update links page
 app.get("/urls/:id", (req, res) => {
-
   if (!res.locals.user) {
     res.redirect('/')
     return
@@ -227,7 +233,6 @@ app.post("/urls/:id/delete", (req, res) => {
     res.redirect('/urls');
   }
 });
-
 
 //clear cookie on logout
 app.post('/logout', (req, res) => {
