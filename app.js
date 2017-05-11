@@ -74,6 +74,17 @@ function checkUser(inputEmail) {
   }
 }
 
+function urlsForUser(userId) {
+  let filtered = {};
+  for (let url in urlDatabase) {
+    let shorturl = urlDatabase[url].shortURL;
+    if (urlDatabase[url].userID === userId)
+      filtered[shorturl] = urlDatabase[url];
+  }
+  return filtered;
+}
+
+
 //-----------------------------------------------------------//
 
 app.use(function(req, res, next){
