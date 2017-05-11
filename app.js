@@ -187,12 +187,22 @@ app.get("/u/:shortURL", (req, res) => {
 
 //endpoint to render update links page
 app.get("/urls/:id", (req, res) => {
-  let templateVars = {
-    shortURL: req.params.id,
-    longURL: urlDatabase[req.params.id].longURL,
-    user: req.cookies.user_id
-  };
-  res.render("urls_show", templateVars);
+
+  if (!res.locals.user) {
+    res.redirect('/')
+    return
+  }
+  if(urlDatabase[req.params.id].userID !== res.locals.user) {
+    //res.status(404);
+    res.send('You do not own that url');
+  } else {
+    let templateVars = {
+      shortURL: req.params.id,
+      longURL: urlDatabase[req.params.id].longURL,
+      user: req.cookies.user_id
+    };
+    res.render("urls_show", templateVars);
+  }
 });
 
 //updating existing links
@@ -205,8 +215,17 @@ app.post('/urls/:id', (req, res) => {
 
 //delete existing links
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id];
-  res.redirect('/urls')
+  if (!res.locals.user) {
+    res.redirect('/')
+    return
+  }
+  if(urlDatabase[req.params.id].userID !== res.locals.user) {
+    //res.status(404);
+    res.send('You do not own that url');
+  } else {
+    delete urlDatabase[req.params.id];
+    res.redirect('/urls');
+  }
 });
 
 
