@@ -1,14 +1,17 @@
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
-const cookieSession = require('cookie-session')
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcrypt');
+const methodOverride = require('method-override');
 
 app.use(bodyParser.urlencoded({extended: true}));
+app.use(methodOverride('_method'))
 app.use(cookieSession({
   name: 'session',
   keys: ['yahooo'],
 }));
+
 
 app.set("view engine", "ejs");
 
@@ -210,7 +213,7 @@ app.get("/urls/:id", (req, res) => {
 });
 
 //updating existing links
-app.post('/urls/:id', (req, res) => {
+app.put('/urls/:id', (req, res) => {
   if(!res.locals.user) {
     res.status(301).send('Please login to view or submit links');
     return;
@@ -227,7 +230,7 @@ app.post('/urls/:id', (req, res) => {
 });
 
 //delete existing links
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id/delete", (req, res) => {
   if (!res.locals.user) {
     res.status(301).redirect('/')
     return
